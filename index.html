@@ -2,36 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>RedWatch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RedWatch - Sentiment Monitor</title>
   <style>
     body {
-      font-family: Segoe UI, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      padding: 40px;
       text-align: center;
-      padding-top: 40px;
+      color: #333;
     }
     h1 {
-      font-size: 3rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      color: #0067b8;
     }
-    h1::before {
-      content: "🔍 ";
-      margin-right: 10px;
+    input {
+      padding: 10px;
+      width: 250px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
-    #results {
+    button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0067b8;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0052a1;
+    }
+    #resultBox {
       margin-top: 30px;
-      font-size: 1.2rem;
-    }
-    .card {
-      display: inline-block;
       padding: 20px;
-      margin: 10px;
+      background-color: #ffffff;
       border: 1px solid #ddd;
       border-radius: 10px;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
-      width: 300px;
+      text-align: left;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
     }
   </style>
 </head>
 <body>
+
+  <h1>🔍 RedWatch</h1>
+  <p>Enter a keyword to monitor Reddit sentiment:</p>
+
+  <input id="keywordInput" type="text" placeholder="e.g. Exchange Hybrid">
+  <button id="analyzeBtn">Analyze</button>
+
+  <div id="resultBox">Waiting for input...</div>
+
+  <script>
+    document.getElementById("analyzeBtn").addEventListener("click", () => {
+      const keyword = document.getElementById("keywordInput").value.trim();
+      const resultBox = document.getElementById("resultBox");
+
+      if (!keyword) {
+        resultBox.innerText = "❗ Please enter a keyword.";
+        return;
+      }
+
+      resultBox.innerText = "⏳ Analyzing Reddit sentiment...";
+
+      fetch("https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ keyword })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Network error");
+        return res.json();
+      })
+      .then(data => {
+        console.log(data);
+        resultBox.innerText = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        console.error("Fetch error:", err);
+        resultBox.innerText = "❌ Failed to fetch data. Check CORS and backend.";
+      });
+    });
+  </script>
+
+</body>
+</html>
