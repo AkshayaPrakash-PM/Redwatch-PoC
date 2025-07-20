@@ -43,10 +43,11 @@
       }
       resultsDiv.innerHTML = "<div>Analyzing Reddit...</div>";
 
+      // Change here: always send keywords as an array.
       fetch('https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword: keyword })
+        body: JSON.stringify({ keywords: [keyword] })
       })
       .then(async res => {
         if (!res.ok) {
@@ -55,14 +56,11 @@
         return res.json();
       })
       .then(data => {
-        // Data structure from n8n: adjust this if your JSON is different!
         resultsDiv.innerHTML = '';
         if (data.error) {
           errorDiv.textContent = data.error;
           return;
         }
-
-        // Example: Show summary sentiment counts
         if (data.summary) {
           resultsDiv.innerHTML += `
             <div class="card">
@@ -73,7 +71,6 @@
             </div>
           `;
         }
-        // Example: Show details for each thread/post
         if (Array.isArray(data.results)) {
           data.results.forEach(post => {
             resultsDiv.innerHTML += `
