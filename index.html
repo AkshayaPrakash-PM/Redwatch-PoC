@@ -2,97 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RedWatch - Sentiment Monitor</title>
+  <title>RedWatch - Reddit Sentiment Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f6f8;
-      padding: 40px;
-      text-align: center;
-      color: #333;
-    }
-    h1 {
-      color: #0067b8;
-    }
-    input {
-      padding: 10px;
-      width: 250px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      padding: 10px 20px;
-      margin-left: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      background-color: #0067b8;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0052a1;
-    }
-    #resultBox {
-      margin-top: 30px;
-      padding: 20px;
-      background-color: #ffffff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      text-align: left;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-      white-space: pre-wrap;
-      font-family: monospace;
-    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f6fb; padding: 2rem;}
+    .container { max-width: 500px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 8px #ccc; padding: 2rem;}
+    h1 { color: #373737; }
+    input, button { padding: 10px; font-size: 1rem; }
+    input { width: 65%; }
+    button { background: #286BF3; color: white; border: none; border-radius: 4px;}
+    .results { margin-top: 1.5rem; }
+    .card { background: #e8eefc; padding: 1rem; border-radius: 6px; margin-bottom: 10px;}
+    .error { color: red; margin-top: 1rem; }
   </style>
 </head>
 <body>
-
-  <h1>🔍 RedWatch</h1>
-  <p>Enter a keyword to monitor Reddit sentiment:</p>
-
-  <input id="keywordInput" type="text" placeholder="e.g. Exchange Hybrid">
-  <button id="analyzeBtn">Analyze</button>
-
-  <div id="resultBox">Waiting for input...</div>
+  <div class="container">
+    <h1>RedWatch</h1>
+    <form id="search-form">
+      <input id="keyword" type="text" placeholder="Enter keyword (e.g. Exchange Hybrid)" required />
+      <button type="submit">Analyze</button>
+    </form>
+    <div class="results" id="results"></div>
+    <div class="error" id="error"></div>
+  </div>
 
   <script>
-    document.getElementById("analyzeBtn").addEventListener("click", () => {
-      const keyword = document.getElementById("keywordInput").value.trim();
-      const resultBox = document.getElementById("resultBox");
+    const form = document.getElementById('search-form');
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('error');
 
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      resultsDiv.innerHTML = '';
+      errorDiv.textContent = '';
+      const keyword = document.getElementById('keyword').value.trim();
       if (!keyword) {
-        resultBox.innerText = "❗ Please enter a keyword.";
+        errorDiv.textContent = 'Please enter a keyword to analyze.';
         return;
       }
+      resultsDiv.innerHTML = "<div>Analyzing Reddit...</div>";
 
-      resultBox.innerText = "⏳ Analyzing Reddit sentiment...";
-
-      fetch("https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ keyword })
+      fetch('https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword: keyword })
       })
-      .then(res => {
-        if (!res.ok) throw new Error("Network error");
+      .then(async res => {
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
         return res.json();
       })
       .then(data => {
-        console.log(data);
-        resultBox.innerText = JSON.stringify(data, null, 2);
+        // Data structure from n8n: adjust this if your JSON is different!
+        resultsDiv.innerHTML = '';
+        if (data.error) {
+          errorDiv.textContent = data.error;
+          return;
+        }
+
+        // Example: Show summary sentiment counts
+        if (data.summary) {
+          resultsDiv.innerHTML += `
+            <div class="card">
+              <strong>Sentiment Summary:</strong>
+              <div>Positive: ${data.summary.positive}</div>
+              <div>Neutral: ${data.summary.neutral}</div>
+              <div>Negative: ${data.summary.negative}</div>
+            </div>
+          `;
+        }
+        // Example: Show details for each thread/post
+        if (Array.isArray(data.results)) {
+          data.results.forEach(post => {
+            resultsDiv.innerHTML += `
+              <div class="card">
+                <div><strong>Post:</strong> ${post.title || post.text || '(no title)'}</div>
+                <div><strong>Sentiment:</strong> ${post.sentiment || '-'}</div>
+                <div><strong>Score:</strong> ${post.score !== undefined ? post.score : '-'}</div>
+                <div><a href="${post.url || '#'}" target="_blank">View on Reddit</a></div>
+              </div>
+            `;
+          });
+        } else {
+          resultsDiv.innerHTML += `
+            <div class="card">
+              <strong>No results found.</strong>
+            </div>
+          `;
+        }
       })
       .catch(err => {
-        console.error("Fetch error:", err);
-        resultBox.innerText = "❌ Failed to fetch data. Check CORS and backend.";
+        errorDiv.textContent = "Failed to fetch data. Please check your backend or CORS.";
+        resultsDiv.innerHTML = '';
+        console.error(err);
       });
     });
   </script>
-
 </body>
 </html>
