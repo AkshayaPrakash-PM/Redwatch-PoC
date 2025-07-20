@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedWatch</title>
+</head>
+<body>
+  <h1>🔍 RedWatch</h1>
+  <p>Enter keywords below to monitor Reddit sentiment:</p>
+
+  <form id="keywordForm">
+    <input type="text" id="keywords" placeholder="e.g. Exchange Server, Outlook Hybrid" required />
+    <button type="submit">Analyze</button>
+  </form>
+
+  <div id="results"></div>
+
+  <script>
+    document.getElementById('keywordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('keywords').value;
+      const keywords = input.split(',').map(k => k.trim()).slice(0, 10);
+
+      const response = await fetch('https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keywords }),
+      });
+
+      const data = await response.json();
+      document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
