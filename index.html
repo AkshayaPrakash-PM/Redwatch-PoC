@@ -5,53 +5,223 @@
   <title>RedWatch - Reddit Sentiment Analyzer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f6fb; padding: 2rem;}
-    .container { max-width: 500px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 8px #ccc; padding: 2rem;}
-    h1 { color: #373737; }
-    input, button { padding: 10px; font-size: 1rem; }
-    input { width: 65%; }
-    button { background: #286BF3; color: white; border: none; border-radius: 4px;}
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: #f3f6fb; 
+      margin: 0;
+      padding: 0;
+    }
+    .dashboard {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      background: #183A72;
+      color: #fff;
+      width: 200px;
+      padding: 2rem 1rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .sidebar h2 {
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+    }
+    .nav-link {
+      margin: 0.5rem 0;
+      color: #8cb5ff;
+      text-decoration: none;
+      font-size: 1.08rem;
+      display: block;
+      padding: 4px 0;
+    }
+    .nav-link.active, .nav-link:hover {
+      color: #fff;
+      font-weight: bold;
+    }
+    .container {
+      flex: 1;
+      padding: 2rem 2rem 2rem 2rem;
+      background: #f3f6fb;
+      min-width: 320px;
+      max-width: 700px;
+      margin: 2rem auto;
+      border-radius: 10px;
+      box-shadow: 0 2px 16px rgba(60,80,130,0.10);
+    }
+    h1 { color: #183A72; }
+    .search-bar {
+      display: flex;
+      margin-bottom: 1.5rem;
+      gap: 10px;
+    }
+    .search-bar input { 
+      padding: 10px; 
+      font-size: 1rem;
+      width: 70%;
+      border-radius: 6px;
+      border: 1px solid #a0b7e5;
+      background: #f6faff;
+      color: #183A72;
+    }
+    .search-bar button { 
+      background: #286BF3; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      font-size: 1rem;
+      min-width: 110px;
+      padding: 10px 20px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-bar button:hover {
+      background: #1743a2;
+    }
+    .summary-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .summary-card {
+      background: #eeeeff;
+      color: #183A72;
+      border-radius: 6px;
+      padding: 0.8rem 1.2rem;
+      min-width: 90px;
+      font-size: 1.04rem;
+      font-weight: 500;
+      text-align: center;
+      box-shadow: 0 1px 4px #b4c3de43;
+      letter-spacing: 1px;
+    }
+    .summary-card.positive { border-top: 3px solid #34bc4a }
+    .summary-card.neutral  { border-top: 3px solid #7f7f7f }
+    .summary-card.negative { border-top: 3px solid #e03b24 }
+    .loading {
+      margin: 2rem 0;
+      text-align: center;
+    }
+    .spinner {
+      display: inline-block;
+      width: 38px;
+      height: 38px;
+      border: 4px solid #d6e1fd;
+      border-radius: 50%;
+      border-top: 4px solid #286BF3;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .results { margin-top: 1.5rem; }
-    .card { background: #e8eefc; padding: 1rem; border-radius: 6px; margin-bottom: 10px;}
-    .error { color: red; margin-top: 1rem; }
+    .card {
+      background: #e8eefc;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px #b2c2e6aa;
+    }
+    .error { color: #e03b24; margin-top: 1rem; font-weight: 500;}
+    .success { color: #34bc4a; margin-top: 1rem; font-weight: 500;}
+    @media (max-width: 800px) {
+      .dashboard { flex-direction: column; }
+      .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 1rem;}
+      .container { margin: 0.5rem; }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 0.7rem;}
+      .sidebar { flex-direction: column; }
+      .summary-card { font-size: 0.98rem; min-width: 74px; padding: 7px 5px;}
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>RedWatch</h1>
-    <form id="search-form">
-      <input id="keyword" type="text" placeholder="Enter keyword (e.g. Exchange Hybrid)" required />
-      <button type="submit">Analyze</button>
-    </form>
-    <div class="results" id="results"></div>
-    <div class="error" id="error"></div>
+  <div class="dashboard">
+    <nav class="sidebar">
+      <h2>RedWatch</h2>
+      <a href="#" class="nav-link active">Dashboard</a>
+      <a href="#" class="nav-link">History (coming soon)</a>
+      <a href="#" class="nav-link">Export (coming soon)</a>
+      <a href="#" class="nav-link">Settings</a>
+    </nav>
+    <main class="container">
+      <h1>Reddit Sentiment Analyzer <span style="font-size: 0.6em; color: #7d8dbb;">(Beta)</span></h1>
+      
+      <form id="search-form" autocomplete="off" class="search-bar">
+        <input id="keyword" type="text" placeholder="Enter keyword (e.g. Exchange Hybrid)" required />
+        <button type="submit">Analyze</button>
+      </form>
+      
+      <div class="summary-bar" id="summary-bar" style="display: none;">
+        <div class="summary-card positive" id="summary-positive">+0</div>
+        <div class="summary-card neutral" id="summary-neutral">0</div>
+        <div class="summary-card negative" id="summary-negative">-0</div>
+      </div>
+      <div class="loading" id="loading" style="display:none;">
+        <div class="spinner"></div>
+        <div style="color:#555;">Analyzing Reddit posts… Please wait</div>
+      </div>
+      <div class="results" id="results"></div>
+      <div class="error" id="error"></div>
+      <div class="success" id="success"></div>
+    </main>
   </div>
 
   <script>
     const form = document.getElementById('search-form');
     const resultsDiv = document.getElementById('results');
     const errorDiv = document.getElementById('error');
+    const successDiv = document.getElementById('success');
+    const summaryBar = document.getElementById('summary-bar');
+    const loadingDiv = document.getElementById('loading');
+    const summaryPositive = document.getElementById('summary-positive');
+    const summaryNeutral = document.getElementById('summary-neutral');
+    const summaryNegative = document.getElementById('summary-negative');
+
+    function showLoading(show) {
+      loadingDiv.style.display = show ? "block" : "none";
+    }
+    function showSummary(summary) {
+      if (summary) {
+        summaryBar.style.display = "";
+        summaryPositive.textContent = `+${summary.positive || 0}`;
+        summaryNeutral.textContent  = `${summary.neutral || 0}`;
+        summaryNegative.textContent = `-${summary.negative || 0}`;
+      } else {
+        summaryBar.style.display = "none";
+      }
+    }
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       resultsDiv.innerHTML = '';
       errorDiv.textContent = '';
+      successDiv.textContent = '';
+      showSummary(null);
+      showLoading(true);
+
       const keyword = document.getElementById('keyword').value.trim();
       if (!keyword) {
+        showLoading(false);
         errorDiv.textContent = 'Please enter a keyword to analyze.';
         return;
       }
-      resultsDiv.innerHTML = "<div>Analyzing Reddit...</div>";
 
-      // Change here: always send keywords as an array.
       fetch('https://akshayaprakash0205.app.n8n.cloud/webhook/redditwatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords: [keyword] })
       })
       .then(async res => {
+        showLoading(false);
         if (!res.ok) {
-          throw new Error(await res.text());
+          let msg = await res.text();
+          throw new Error(msg || "Backend error");
         }
         return res.json();
       })
@@ -61,24 +231,25 @@
           errorDiv.textContent = data.error;
           return;
         }
+        showSummary(data.summary);
+
         if (data.summary) {
-          resultsDiv.innerHTML += `
-            <div class="card">
-              <strong>Sentiment Summary:</strong>
-              <div>Positive: ${data.summary.positive}</div>
-              <div>Neutral: ${data.summary.neutral}</div>
-              <div>Negative: ${data.summary.negative}</div>
-            </div>
-          `;
+          successDiv.textContent = "Analysis complete! " +
+            ((data.results && data.results.length > 0) ? `${data.results.length} result(s) found.` : "No posts found.");
         }
-        if (Array.isArray(data.results)) {
+        if (Array.isArray(data.results) && data.results.length > 0) {
           data.results.forEach(post => {
             resultsDiv.innerHTML += `
               <div class="card">
-                <div><strong>Post:</strong> ${post.title || post.text || '(no title)'}</div>
-                <div><strong>Sentiment:</strong> ${post.sentiment || '-'}</div>
-                <div><strong>Score:</strong> ${post.score !== undefined ? post.score : '-'}</div>
-                <div><a href="${post.url || '#'}" target="_blank">View on Reddit</a></div>
+                <div style="font-weight:bold;font-size:1.07em;">${post.title || post.text || '(no title)'}</div>
+                <div style="margin: 8px 0 4px 0;">
+                  <span style="font-size:1.01em;">Sentiment:</span>
+                  <strong style="color:${getSentimentColor(post.sentiment)};margin-left:3px;text-transform:capitalize;">${post.sentiment || '-'}</strong>
+                  <span style="margin-left:10px;font-size:0.99em;">Score: ${post.score !== undefined ? post.score : '-'}</span>
+                </div>
+                <div>
+                  <a href="${post.url || '#'}" target="_blank" style="color:#286BF3;text-decoration:underline;">View on Reddit</a>
+                </div>
               </div>
             `;
           });
@@ -91,11 +262,20 @@
         }
       })
       .catch(err => {
-        errorDiv.textContent = "Failed to fetch data. Please check your backend or CORS.";
+        showLoading(false);
+        errorDiv.textContent = "Failed to fetch data. Please check your backend or network. " 
+                               + (err && err.message ? err.message : "");
         resultsDiv.innerHTML = '';
         console.error(err);
       });
     });
+
+    function getSentimentColor(sentiment) {
+      if (!sentiment) return '#7f7f7f';
+      if (sentiment.toLowerCase() === 'positive') return '#29a526';
+      if (sentiment.toLowerCase() === 'negative') return '#e03b24';
+      return '#7f7f7f';
+    }
   </script>
 </body>
 </html>
